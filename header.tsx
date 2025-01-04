@@ -18,7 +18,7 @@ function Header() {
           {/* Logo */}
           <div className='h-full w-[200px] relative '>
             <Link href="/" className="flex-shrink-0 ">
-              <Image src={"/logoo.png"} alt={"Logo"} fill objectFit='cover' />
+              <Image src={"/logoo.png"} alt={"Logo"} fill objectFit='cover'  sizes={'100'}/>
               
             </Link>
           </div>

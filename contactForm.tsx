@@ -18,7 +18,7 @@ export default function ContactForm() {
     e.preventDefault();
 
     const templateParams = {
-      to_name: "Taha Ahmed",
+      to_name: "UZMA KHAN",
       from_name: name,
       from_email: email,
       message: message
