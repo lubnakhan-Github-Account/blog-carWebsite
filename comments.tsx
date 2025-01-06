@@ -1,193 +1,136 @@
-// src\components\comments.tsx
-'use client'
-
-import { useEffect, useState } from 'react'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { X } from 'lucide-react'
-import ReviewCard from './ReviewCard'
-import { createComment, deleteComment, myFetch, updateComment } from '@/services/create'
-import { Toaster, toast } from 'sonner';
 
 
-export interface Comment { _id: string,  name: string; email: string; message: string, paramsId: number}
+"use client";
 
-export default function PostCreator({ blog_id }: { blog_id: number }) {
+import React, { useState, useEffect } from 'react';
+import { Button } from './ui/button';
+import { Card, CardContent } from './ui/card';
+import { Input } from './ui/input';
 
+interface Comment {
+  id: string;
+  author: string;
+  text: string;
+}
 
-  const [name, SetName] = useState("")
-  const [email, SetEmail] = useState("")
-  const [message, SetMessage] = useState("")
-  const [cmtArray, setCmtArray] = useState<Comment[]>([])
-  const [btnName, setBtnName] = useState("Post")
-  const [findCard, setFindCard] = useState<Comment | null>(null)
+interface CommentSectionProps {
+  postId: string;
+}
 
-// ------------------------------------------------create 
-const postComment = async () => {
-  const cardFound = cmtArray.find((comment) => comment._id === findCard?._id);
+export default function CommentSection({ postId }: CommentSectionProps) {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [authorName, setAuthorName] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
 
-  if (cardFound) {
-    const UpdatedComment = { name, email, message, paramsId: Number(blog_id) };
-    const res = await updateComment(cardFound._id, UpdatedComment)
-    setCmtArray(res);
-    SetName('');
-    SetEmail('');
-    SetMessage('');
-    handleClose();
-    setBtnName('Post')
-    setFindCard(null)
-    toast.success('Comment updated successfully');
-  }
-  
-  else if (name && email && message && !cardFound) {
-    const newComment = { name, email, message, paramsId: Number(blog_id) };
-    try {
-      const res = await createComment(newComment);
-      setCmtArray(res);
-      console.log("🚀",res);
-      SetName('');
-      SetEmail('');
-      SetMessage('');
-      handleClose();
-      toast.success('Comment posted successfully');
-      
-    } catch (error) {
-      console.error('Error posting comment:', error);
+  useEffect(() => {
+    // Fetch comments for the given postId
+    // Example: fetchComments(postId).then(setComments);
+  }, [postId]);
+
+  const handleAddComment = () => {
+    if (!newComment.trim() || !authorName.trim()) {
+      alert('Please fill out both fields before submitting.');
+      return;
     }
-  } else {
-    toast.error('Please fill all the fields');
-  }
-};
 
+    const newCommentObj: Comment = {
+      id: new Date().toISOString(),
+      author: authorName,
+      text: newComment,
+    };
 
-// ------------------------------------------------fetch
-useEffect(() => {
-  const fetchComments = async () => {
-    try {
-      const comments = await myFetch(blog_id);
-      setCmtArray(comments);
-      console.log("💡",comments);
-      
-    } catch (error) {
-      console.error('Error fetching comments:', error);
+    setComments([...comments, newCommentObj]);
+    setNewComment('');
+    setAuthorName('');
+  };
+
+  const handleEditComment = (commentID: string) => {
+    const commentToEdit = comments.find((comment) => comment.id === commentID);
+    if (commentToEdit) {
+      setNewComment(commentToEdit.text);
+      setAuthorName(commentToEdit.author);
+      setEditingCommentId(commentID);
     }
   };
-  fetchComments();
-},[blog_id]);
 
+  const handleSaveEditedComment = () => {
+    if (!newComment.trim() || !authorName.trim() || !editingCommentId) {
+      alert('Please fill out both fields before saving.');
+      return;
+    }
 
-// ------------------------------------------------set update input fields
-const setUpdateInputFields = (data: Comment) => {
-  setIsExpanded(true);
-  SetName(data.name);
-  SetEmail(data.email);
-  SetMessage(data.message);
-  setBtnName('Update')
-  setFindCard(data)
-}
+    const updatedComments = comments.map((comment) =>
+      comment.id === editingCommentId
+        ? { ...comment, text: newComment, author: authorName }
+        : comment
+    );
 
-// ------------------------------------------------Delete
-const deleteFunction = async (_id: string) => {
-  const res = await deleteComment(_id, blog_id);
-  setCmtArray(res);
-  toast.success('Comment deleted successfully');
-}
-
-
-
-
-
-
-  const [isExpanded, setIsExpanded] = useState(false)
-
-  const handleClose = () => {
-    setIsExpanded(false)
-  }
+    setComments(updatedComments);
+    setNewComment('');
+    setAuthorName('');
+    setEditingCommentId(null);
+  };
 
   return (
-    <div className="w-full p-6 bg-white border border-[#D4D7E5] rounded-lg">
-      {!isExpanded ? (
-        <div className="flex items-center gap-3">
-          <Avatar className="h-[59px] w-[59px] border-2 border-primary">
-            <AvatarImage src="/placeholder.svg" alt="User avatar" />
-            <AvatarFallback>User</AvatarFallback>
-          </Avatar>
-          <button
-            onClick={() => setIsExpanded(true)}
-            className="flex-1 h-14 px-4 text-left text-[#565973] font-semibold bg-[#F3F3F3] border border-[#B4B7C9] rounded-[30px] hover:bg-gray-100 transition-colors"
-          >
-            Add your comments here ...
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-[59px] w-[59px] border-2 border-primary">
-                <AvatarImage src="/user.png" alt="User avatar" />
-              </Avatar>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              className="h-11 w-11"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
+    <div className="mt-8 max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
+      {/* Section Header */}
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Comments</h2>
 
-          {/* Added name input fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                placeholder="Enter your first name"
-                className="bg-[#F3F3F3] border-[#B4B7C9]"
-                value={name}
-                onChange={(e) => SetName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                placeholder="Enter your email"
-                className="bg-[#F3F3F3] border-[#B4B7C9]"
-                value={email}
-                onChange={(e) => SetEmail(e.target.value)}
-              />
-            </div>
-          </div>
+      {/* Comment List */}
+      <div className="space-y-6">
+        {comments.length > 0 ? (
+          comments.map((comment) => (
+            <Card key={comment.id} className="border border-gray-200 rounded-lg">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-700">
+                      {comment.author}
+                    </h4>
+                    <p className="text-sm text-gray-500">Posted just now</p>
+                  </div>
+                  <Button
+                    onClick={() => handleEditComment(comment.id)}
+                    className="text-sm text-sky-500 hover:text-blue-600"
+                  >
+                    Edit
+                  </Button>
+                </div>
+                <p className="mt-2 text-gray-800">{comment.text}</p>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <p className="text-center text-gray-400">No comments yet.</p>
+        )}
+      </div>
 
-          <Textarea
-            placeholder="Write your post or question here"
-            className="min-h-[250px] bg-[#F3F3F3] border-[#B4B7C9] resize-none"
-            value={message}
-            onChange={(e) => SetMessage(e.target.value)}
-          />
-          <div className="flex justify-end">
-            <Toaster richColors/>
-            <Button className="w-[161px]" onClick={postComment}>{btnName}</Button>
-          </div>
-        </div>
-      )}
-
-      <hr className='my-4'/>
-      {cmtArray.map((comment: Comment, index: number) => (
-         <ReviewCard
-         data={comment}
-         key={index}
-         setUpdateInputFields={setUpdateInputFields}
-         deleteFunction={deleteFunction}
-       />
-      ))}
+      {/* Add/Edit Comment Form */}
+      <div className="mt-8">
+        <Input
+          type="text"
+          value={authorName}
+          onChange={(e) => setAuthorName(e.target.value)}
+          placeholder="Your name"
+          className="w-full mb-4 border border-gray-300 rounded-lg px-4 py-2"
+        />
+        <Input
+          type="text"
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Add a comment"
+          className="w-full mb-4 border border-gray-300 rounded-lg px-4 py-2"
+        />
+        <Button
+          onClick={
+            editingCommentId ? handleSaveEditedComment : handleAddComment
+          }
+          className="w-full py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-800 transition duration-300"
+        >
+          {editingCommentId ? 'Save Changes' : 'Submit Comment'}
+        </Button>
+      </div>
     </div>
-
-  )
+  );
 }
-
